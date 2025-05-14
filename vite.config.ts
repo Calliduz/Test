@@ -2,6 +2,7 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
 export default defineConfig({
+   base: '/Test/',
   plugins: [react()],
   server: {
     proxy: {
@@ -9,6 +10,7 @@ export default defineConfig({
         target: 'http://localhost/Test/API',
         changeOrigin: true,
         rewrite: path => path.replace(/^\/login\.php/, '/login.php'),
+      
       }
     }
   }
