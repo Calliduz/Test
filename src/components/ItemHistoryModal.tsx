@@ -63,24 +63,27 @@ const ItemHistoryModal: React.FC<ItemHistoryModalProps> = ({
       </td>
     </tr>
   ) : (
-    sortedEntries.map(entry => (
-      <tr key={entry.id} className="border-b border-gray-200 hover:bg-gray-50">
-        <td className="p-3">{formatDate(entry.date ?? null)}</td>
-        <td className="p-3">
-          {entry.quantity > 0 ? (
-            <span className="text-green-600 font-medium">
-              +{entry.quantity} {entry.unit}
-            </span>
-          ) : (
-            <span className="text-red-600 font-medium">
-              {entry.quantity} {entry.unit}
-            </span>
-          )}
-        </td>
-        <td className="p-3">{formatDate(entry.harvestDate ?? null)}</td>
-        <td className="p-3">{entry.notes || "-"}</td>
-      </tr>
-    ))
+    sortedEntries.map((entry, index) => (
+  <tr 
+    key={`history-${entry.id}-${entry.date}-${index}`} 
+    className="border-b border-gray-200 hover:bg-gray-50"
+  >
+    <td className="p-3">{formatDate(entry.date ?? null)}</td>
+    <td className="p-3">
+      {entry.quantity > 0 ? (
+        <span className="text-green-600 font-medium">
+          +{entry.quantity} {entry.unit}
+        </span>
+      ) : (
+        <span className="text-red-600 font-medium">
+          {entry.quantity} {entry.unit}
+        </span>
+      )}
+    </td>
+    <td className="p-3">{formatDate(entry.harvestDate ?? null)}</td>
+    <td className="p-3">{entry.notes || "-"}</td>
+  </tr>
+))
   )}
 </tbody>
           </table>

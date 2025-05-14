@@ -12,7 +12,10 @@ interface IncreaseStockModalProps {
 const IncreaseStockModal: React.FC<IncreaseStockModalProps> = ({ item, onClose, onIncreaseStock }) => {
   const [quantity, setQuantity] = useState<number>(1);
   const [reason, setReason] = useState<string>('');
-  const [harvestDate, setHarvestDate] = useState<string>(''); // New state for harvest date
+  const [harvestDate, setHarvestDate] = useState<string>(
+    item.harvestDate ? new Date(item.harvestDate).toISOString().split('T')[0] : 
+    new Date().toISOString().split('T')[0]
+  );
 
   // Handle form submission
   const handleSubmit = (e: React.FormEvent) => {

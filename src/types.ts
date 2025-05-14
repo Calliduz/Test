@@ -58,7 +58,7 @@ export interface ConsolidatedItem {
   subcategory: string;
   quantity: number;
   unit: string;
-  harvestDate?: number;
+  harvestDate: string | null;
   predefined_item_id?: number; // Added property
   notes: string;
   lastUpdated: string;

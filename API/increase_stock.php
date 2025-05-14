@@ -68,10 +68,17 @@ try {
     }
 
     // Insert into item_history table
-    $insertHistoryQuery = "INSERT INTO item_history (predefined_item_id, quantity, notes, change_type, date, harvest_date) 
-                          VALUES (?, ?, ?, 'increase', NOW(), NULL)";
-    $stmt = $conn->prepare($insertHistoryQuery);
-    $stmt->bind_param("iis", $predefinedItemId, $quantity, $notes);
+   $insertHistoryQuery = "INSERT INTO item_history (
+    predefined_item_id, 
+    quantity, 
+    notes, 
+    change_type, 
+    date, 
+    harvest_date
+) VALUES (?, ?, ?, 'increase', NOW(), ?)";
+
+$stmt = $conn->prepare($insertHistoryQuery);
+$stmt->bind_param("iiss", $predefinedItemId, $quantity, $notes, $harvestDate);
     $stmt->execute();
 
     // Insert into action_logs table

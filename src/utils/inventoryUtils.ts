@@ -106,23 +106,29 @@ export const getConsolidatedInventory = (
   try {
     const inventoryMap = new Map<string, ConsolidatedItem>();
 
-    historyEntries.forEach((entry) => {
+    // Sort entries by date in descending order to get most recent first
+    const sortedEntries = [...historyEntries].sort((a, b) => 
+      new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
+
+    sortedEntries.forEach((entry) => {
       const key = `${entry.name}-${entry.mainCategory}-${entry.subcategory}`;
 
       if (!inventoryMap.has(key)) {
-  inventoryMap.set(key, {
-    id: entry.id ?? generateId(),
-    name: entry.name,
-    mainCategory: entry.mainCategory,
-    subcategory: entry.subcategory,
-    quantity: 0,
-    unit: entry.unit as Unit,
-    lastUpdated: "",
-    harvestDate: entry.harvestDate ? Date.parse(entry.harvestDate) : undefined,
-    notes: entry.notes ?? "",
-    changeType: entry.changeType, // <-- Add this line
-  });
-}
+        inventoryMap.set(key, {
+          id: entry.id ?? generateId(),
+          name: entry.name,
+          mainCategory: entry.mainCategory,
+          subcategory: entry.subcategory,
+          quantity: 0,
+          unit: entry.unit as Unit,
+          lastUpdated: entry.date,
+          // Only set harvestDate if it exists and is not null
+          harvestDate: entry.harvestDate || null,
+          notes: entry.notes ?? "",
+          changeType: entry.changeType,
+        });
+      }
 
       const item = inventoryMap.get(key)!;
       item.quantity += entry.quantity;

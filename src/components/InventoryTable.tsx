@@ -1,7 +1,30 @@
-import React from 'react';
-import { ChevronDown, ChevronUp, History } from 'lucide-react';
-import { ConsolidatedItem, Category, ViewMode, HistoryEntry } from '../types';
-import { formatDate } from '../utils/inventoryUtils';
+import React, { useEffect } from 'react';
+import { History } from 'lucide-react';
+import { ConsolidatedItem, HistoryEntry, Category, ViewMode,} from '../types';
+
+// Add this function to safely format dates
+const safeFormatDate = (date: string | number | null | undefined) => {
+  if (!date) return "-";
+  const dateValue = typeof date === 'number' ? new Date(date) : new Date(date);
+  return dateValue.toLocaleDateString();
+};
+
+const formatDate = (date: string | null | undefined) => {
+  if (!date) return "-";
+  try {
+    const dateObj = new Date(date);
+    if (isNaN(dateObj.getTime())) {
+      console.error('Invalid date format:', date);
+      return "-";
+    }
+    return dateObj.toLocaleDateString();
+  } catch (error) {
+    console.error("Error formatting date:", error);
+    return "-";
+  }
+};
+
+
 
 interface InventoryTableProps {
   items: ConsolidatedItem[] | HistoryEntry[];
@@ -14,40 +37,43 @@ interface InventoryTableProps {
 
 const InventoryTable: React.FC<InventoryTableProps> = ({
   items,
-  viewMode,
   categories,
-  onReduceStock,
+  viewMode,
   onIncreaseStock,
+  onReduceStock,
   onViewHistory
 }) => {
-  // Ensure items is an array
   const itemsArray = Array.isArray(items) ? items : [];
 
-  // Get category label
   const getCategoryLabel = (mainCategory: string | number, subcategory: string | number) => {
     const mainCat = categories[mainCategory];
     const mainLabel = mainCat?.label || mainCategory;
     const subLabel = mainCat?.subcategories?.[subcategory]?.label || subcategory;
-    return `${mainLabel}/${subLabel}`;
+    return `${mainLabel} / ${subLabel}`;
   };
 
-  // Add this function to safely format dates
-  const safeFormatDate = (date: string | number | null | undefined) => {
-    if (!date) return "-";
-    return formatDate(String(date));
-  };
+  useEffect(() => {
+    console.log('All items:', itemsArray);
+    if (viewMode === 'consolidated') {
+      console.log('Consolidated items:', itemsArray.map(item => ({
+        name: item.name,
+        harvestDate: item.harvestDate,
+        raw: item
+      })));
+    }
+  }, [itemsArray, viewMode]);
 
   return (
     <div className="overflow-x-auto">
       <table className="w-full border-collapse">
-        <thead>
-          <tr className="bg-green-700 text-white">
+        <thead className="bg-green-700 text-white">
+          <tr>
             {viewMode === 'consolidated' ? (
               <>
                 <th className="p-3 text-left">Item Name</th>
                 <th className="p-3 text-left">Category</th>
                 <th className="p-3 text-left">Current Stock</th>
-                <th className="p-3 text-left">Recent Harvest Date</th>
+                <th className="p-3 text-left">Recent Procured Date</th>
                 <th className="p-3 text-left">Actions</th>
               </>
             ) : (
@@ -56,7 +82,7 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
                 <th className="p-3 text-left">Item Name</th>
                 <th className="p-3 text-left">Category</th>
                 <th className="p-3 text-left">Quantity Change</th>
-                <th className="p-3 text-left">Harvest Date</th>
+                <th className="p-3 text-left">Procured Date</th>
                 <th className="p-3 text-left">Notes</th>
               </>
             )}
@@ -65,8 +91,8 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
         <tbody>
           {itemsArray.length === 0 ? (
             <tr>
-              <td 
-                colSpan={viewMode === 'consolidated' ? 5 : 6} 
+              <td
+                colSpan={viewMode === 'consolidated' ? 5 : 6}
                 className="p-4 text-center text-gray-500 border border-gray-200"
               >
                 No items found
@@ -75,14 +101,18 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
           ) : (
             viewMode === 'consolidated' ? (
               // Consolidated view
-              (itemsArray as ConsolidatedItem[]).map(item => (
-                <tr key={item.id} className="border-b border-gray-200 hover:bg-gray-50">
+              (itemsArray as ConsolidatedItem[]).map(item => {
+  console.log('Item harvest date:', item.harvestDate); // Debug log
+  return (
+                <tr key={`consolidated-${item.id}-${item.predefined_item_id}`} className="border-b border-gray-200 hover:bg-gray-50">
                   <td className="p-3">{item.name}</td>
                   <td className="p-3">{getCategoryLabel(item.mainCategory, item.subcategory)}</td>
                   <td className="p-3">
                     <span className="font-medium">{item.quantity} {item.unit}</span>
                   </td>
-                  <td className="p-3">{safeFormatDate(item.harvestDate)}</td>
+                  <td className="p-3">
+                    {item.harvestDate ? formatDate(item.harvestDate) : "-"}
+                  </td>
                   <td className="p-3">
                     <div className="flex gap-2">
                       <button 
@@ -107,11 +137,13 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
                     </div>
                   </td>
                 </tr>
-              ))
+              );
+              })    
+              
             ) : (
               // History view
-              (itemsArray as HistoryEntry[]).map(entry => (
-                <tr key={entry.id} className="border-b border-gray-200 hover:bg-gray-50">
+              (itemsArray as HistoryEntry[]).map((entry, index) => (
+                <tr key={`history-${entry.id}-${entry.date}-${index}`} className="border-b border-gray-200 hover:bg-gray-50">
                   <td className="p-3">{safeFormatDate(entry.date)}</td>
                   <td className="p-3">{entry.name}</td>
                   <td className="p-3">{getCategoryLabel(entry.mainCategory, entry.subcategory)}</td>
@@ -122,7 +154,7 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
                       <span className="text-red-600 font-medium">{entry.quantity} {entry.unit}</span>
                     )}
                   </td>
-                  <td className="p-3">{safeFormatDate(entry.harvestDate)}</td>
+                  <td className="p-3">{formatDate(entry.harvestDate)}</td>
                   <td className="p-3">{entry.notes || "-"}</td>
                 </tr>
               ))

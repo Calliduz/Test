@@ -40,19 +40,57 @@ const OperatorDashboard: React.FC = () => {
   }, []);
 
   // Fetch items from backend
-  const fetchItems = async () => {
+const fetchItems = async () => {
   try {
     const res = await axios.get("http://localhost/Test/API/items.php");
+    console.log('API Response:', res.data);
     const data = typeof res.data === "string" ? JSON.parse(res.data) : res.data;
     
-    // Check if we're getting the new format with both items and history
-    if (data.items && data.history) {
-      setHistoryEntries(data.history);
-      setConsolidatedItems(data.items);
-    } else {
-      // Fallback for old format
-      setHistoryEntries(data);
-      setConsolidatedItems(getConsolidatedInventory(data));
+    if (data.items && Array.isArray(data.items)) {
+      const itemsWithDates = data.items.map((item: ConsolidatedItem) => {
+        // Get all history entries for this item
+        const itemHistory = data.history.filter((h: HistoryEntry) => 
+          h.predefined_item_id === item.predefined_item_id
+        );
+
+        // First check for the most recent entry with a harvest date
+        const entriesWithDates = itemHistory
+          .filter((h: HistoryEntry) => h.harvestDate && h.harvestDate.trim() !== '')
+          .sort((a: HistoryEntry, b: HistoryEntry) => 
+            new Date(b.date).getTime() - new Date(a.date).getTime()
+          );
+
+        if (entriesWithDates.length > 0) {
+          return {
+            ...item,
+            harvestDate: entriesWithDates[0].harvestDate
+          };
+        }
+
+        // If no entries with harvest dates, look for the initial 'add' entry
+        const addEntries = itemHistory
+          .filter((h: HistoryEntry) => h.changeType === 'add')
+          .sort((a: HistoryEntry, b: HistoryEntry) => 
+            new Date(b.date).getTime() - new Date(a.date).getTime()
+          );
+
+        if (addEntries.length > 0) {
+          return {
+            ...item,
+            harvestDate: addEntries[0].harvestDate
+          };
+        }
+
+        // If no matching entries found, return item with null harvest date
+        return {
+          ...item,
+          harvestDate: null
+        };
+      });
+      
+      console.log('Items with dates:', itemsWithDates);
+      setConsolidatedItems(itemsWithDates);
+      setHistoryEntries(Array.isArray(data.history) ? data.history : []);
     }
   } catch (error) {
     console.error("❌ Failed to load items:", error);
@@ -119,41 +157,41 @@ const OperatorDashboard: React.FC = () => {
         </div>
 
         {!showReportView ? (
-          <>
-            <div className="mb-4">
-              <button
-                className={`px-4 py-2 mr-2 rounded ${
-                  viewMode === "consolidated" ? "bg-green-700 text-white" : "bg-white border"
-                }`}
-                onClick={() => setViewMode("consolidated")}
-              >
-                Consolidated View
-              </button>
-              <button
-                className={`px-4 py-2 rounded ${
-                  viewMode === "history" ? "bg-green-700 text-white" : "bg-white border"
-                }`}
-                onClick={() => setViewMode("history")}
-              >
-                History View
-              </button>
-            </div>
-            <InventoryTable
-  items={viewMode === "consolidated" ? consolidatedItems : historyEntries}
-  viewMode={viewMode}
-  categories={categories}
-  onReduceStock={handleReduceStock}
-  onIncreaseStock={handleIncreaseStock}
-  onViewHistory={handleViewHistory}
-/>
-          </>
-        ) : (
-          <ReportView
-            historyEntries={historyEntries}
-            categories={categories}
-            onClose={() => setShowReportView(false)}
-          />
-        )}
+  <>
+    <div className="mb-4">
+      <button
+        className={`px-4 py-2 mr-2 rounded ${
+          viewMode === "consolidated" ? "bg-green-700 text-white" : "bg-white border"
+        }`}
+        onClick={() => setViewMode("consolidated")}
+      >
+        Consolidated View
+      </button>
+      <button
+        className={`px-4 py-2 rounded ${
+          viewMode === "history" ? "bg-green-700 text-white" : "bg-white border"
+        }`}
+        onClick={() => setViewMode("history")}
+      >
+        History View
+      </button>
+    </div>
+    <InventoryTable
+      items={viewMode === "consolidated" ? consolidatedItems : historyEntries}
+      viewMode={viewMode}
+      categories={categories}
+      onReduceStock={handleReduceStock}
+      onIncreaseStock={handleIncreaseStock}
+      onViewHistory={handleViewHistory}
+    />
+  </>
+) : (
+  <ReportView
+    historyEntries={historyEntries}
+    categories={categories}
+    onClose={() => setShowReportView(false)}
+  />
+)}
       </main>
       <Footer />
 

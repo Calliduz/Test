@@ -73,38 +73,49 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ categories, onClose, onAddI
         return;
       }
 
-      // Send only the required fields to the backend
       const payload = {
-        predefined_item_id: existing.id,
-        quantity,
-        harvest_date: harvestDate
+        predefined_item_id: Number(existing.id),
+        quantity: Number(quantity),
+        harvest_date: harvestDate,
+        notes: notes || ''
       };
 
-      const response = await axios.post('http://localhost/Test/API/add_item.php', payload, {
-        headers: { 'Content-Type': 'application/json' }
-      });
+      console.log('Sending payload:', payload);
+
+      const response = await axios({
+      method: 'post',
+      url: 'http://localhost/Test/API/add_item.php',
+      data: payload,
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+
+      console.log('Response:', response.data);
 
       if (response.data.success) {
-  onAddItem({
-    id: response.data.id || Date.now(),
-    name,
-    mainCategory,
-    subcategory,
-    quantity,
-    unit,
-    harvestDate,
-    notes,
-    predefined_item_id: existing.id,
-    changeType: "add",
-    date: new Date().toISOString(), // Add the date field
-    userId: response.data.userId || undefined,
-    itemId: response.data.id || undefined
-  });
-  onClose();
+      onAddItem({
+        id: response.data.id,
+        name,
+        mainCategory,
+        subcategory,
+        quantity: Number(quantity),
+        unit,
+        harvestDate: harvestDate || null,
+        notes,
+        predefined_item_id: existing.id,
+        changeType: "add",
+        date: new Date().toISOString()
+      });
+      onClose();
+
+    
+      
       } else {
         alert(response.data.message || 'Failed to add item. Please try again.');
       }
     } catch (error) {
+      console.error('Error adding item:', error);
       alert('Failed to add item. Please try again.');
     }
   };
